@@ -36,6 +36,19 @@ pct start 110
 Nothing else on the host may claim the Bluetooth adapter (for example a VM
 with it passed through), or the node loses it.
 
+The host's dbus-daemon drops clients whose uid has no passwd entry, and
+container uids map to host uids that don't exist (container uid 999 is host
+uid 100999). After `node/install.sh` creates the `switchbot` user, give its
+mapped uid an entry on the host:
+
+```sh
+groupadd --system --gid 100991 ct110-switchbot
+useradd --system --uid 100999 --gid 100991 --no-create-home --home-dir /nonexistent \
+  --shell /usr/sbin/nologin ct110-switchbot
+```
+
+(`pct exec 110 -- id switchbot` gives the uid and gid; add 100000 to each.)
+
 Then, from a machine with SSH access to both:
 
 ```sh
