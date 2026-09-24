@@ -148,13 +148,15 @@ label { flex: 1; color: #a1a1aa; }
         return status ? status.hold_seconds : Number(holdSel.value) || 5;
     }
 
+    const holdLabel = () => `Hold ${holdSeconds()} s`;
+
     function render() {
-        holdBtn.textContent = `Hold ${holdSeconds()} s`;
+        if (!holdBtn.classList.contains("armed")) holdBtn.textContent = holdLabel();
         if (!status) return;
         holdSel.value = String(status.hold_seconds);
         const last = status.last;
         let line = status.configured ? `Bot ${status.mac}` : "No Bot set up yet; open Setup and scan.";
-        if (last && last.battery !== undefined) line += ` · battery ${last.battery}%`;
+        if (last && last.battery !== undefined) line += ` \u00b7 battery ${last.battery}%`;
         $(".bot").textContent = line;
         if (last && !msg.textContent) {
             const when = new Date(last.at * 1000).toLocaleTimeString();
@@ -189,7 +191,7 @@ label { flex: 1; color: #a1a1aa; }
 
     async function act(path, body, okText) {
         setBusy(true);
-        show("Working…", "");
+        show("Working\u2026", "");
         try {
             const res = await api(path, body);
             if (res.ok) show(okText(res), "ok");
@@ -203,12 +205,13 @@ label { flex: 1; color: #a1a1aa; }
         }
     }
 
-    function armable(btn, run) {
+    // First click arms the button for 4 s; a second click runs it.
+    function armable(btn, label, run) {
         let timer = null;
         const disarm = () => {
             clearTimeout(timer);
             btn.classList.remove("armed");
-            render();
+            btn.textContent = label();
         };
         btn.addEventListener("click", async () => {
             if (busy) return;
@@ -223,10 +226,10 @@ label { flex: 1; color: #a1a1aa; }
         });
     }
 
-    armable(pressBtn, () => act("press", {}, (r) => `Pressed (${r.elapsed} s)`));
-    armable(holdBtn, () => {
+    armable(pressBtn, () => "Press", () => act("press", {}, (r) => `Pressed (${r.elapsed} s)`));
+    armable(holdBtn, holdLabel, () => {
         const seconds = holdSeconds();
-        show(`Holding for ${seconds} s…`, "");
+        show(`Holding for ${seconds} s\u2026`, "");
         return act("hold", { seconds }, (r) => `Held for ${r.seconds} s` + (r.warning ? ` (${r.warning})` : ""));
     });
 
