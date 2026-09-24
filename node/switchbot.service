@@ -1,0 +1,23 @@
+[Unit]
+Description=SwitchBot Bot power-button API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=switchbot
+Group=switchbot
+# The container has no Bluetooth of its own; it uses the host's BlueZ
+# through a bind mount of the host's /run/dbus.
+Environment=DBUS_SYSTEM_BUS_ADDRESS=unix:path=/mnt/host-dbus/system_bus_socket
+Environment=SWITCHBOT_LISTEN=0.0.0.0:8779
+ExecStart=/usr/bin/python3 /opt/switchbot/switchbotd.py serve
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/etc/switchbot
+
+[Install]
+WantedBy=multi-user.target

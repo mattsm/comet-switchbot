@@ -1,0 +1,5 @@
+# kvmd lists every directory under /usr/share/kvmd/extras and logs an error
+# for one without a manifest.
+name: SwitchBot
+description: Power button (SwitchBot Bot) in the web UI
+enabled: false

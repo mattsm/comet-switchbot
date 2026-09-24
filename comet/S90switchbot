@@ -1,0 +1,59 @@
+#!/bin/sh
+# SwitchBot power button in the Comet web UI. /etc/init.d/S99custom runs this
+# with "start" at boot, before nginx starts; "restart" re-applies it and
+# reloads nginx.
+
+D=/etc/kvmd/user/switchbot
+EXTRA=/usr/share/kvmd/extras/switchbot
+WWW=/run/switchbot/www
+
+nginx_ok() {
+	# S99kvmd-nginx creates these just before it starts nginx; -t needs them.
+	mkdir -p /tmp/kvmd-nginx /var/log/nginx
+	/usr/sbin/nginx -p /etc/kvmd/nginx -c /etc/kvmd/nginx-kvmd.conf \
+		-g "pid /run/kvmd/nginx.pid; user root; error_log stderr;" -t >/dev/null 2>&1
+}
+
+apply() {
+	mkdir -p "$WWW" "$EXTRA"
+	# Rendered from GL's current index.html every boot, so it always matches
+	# the installed firmware's asset names. GL's own file is never touched.
+	sed 's#</head>#<script src="/switchbot/ui.js" defer></script></head>#' \
+		/usr/share/kvmd/glweb/index.html > "$WWW/index.html.tmp"
+	if grep -q switchbot/ui.js "$WWW/index.html.tmp"; then
+		mv "$WWW/index.html.tmp" "$WWW/index.html"
+	else
+		rm -f "$WWW/index.html.tmp" "$WWW/index.html"
+	fi
+	cp "$D/manifest.yaml" "$EXTRA/manifest.yaml"
+	cp "$D/nginx.ctx-server.conf" "$EXTRA/nginx.ctx-server.conf"
+	chmod 600 "$EXTRA/nginx.ctx-server.conf"
+	if ! nginx_ok; then
+		rm -f "$EXTRA/nginx.ctx-server.conf"
+		echo "switchbot: nginx rejected the drop-in; power button disabled" >&2
+		return 1
+	fi
+}
+
+reload_nginx() {
+	[ -f /run/kvmd/nginx.pid ] && kill -HUP "$(cat /run/kvmd/nginx.pid)"
+}
+
+case "$1" in
+	start)
+		apply
+		;;
+	stop)
+		;;
+	restart)
+		apply && reload_nginx
+		;;
+	uninstall)
+		rm -rf "$EXTRA" /run/switchbot /etc/kvmd/user/scripts/S90switchbot
+		reload_nginx
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart|uninstall}" >&2
+		exit 1
+		;;
+esac
