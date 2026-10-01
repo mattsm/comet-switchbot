@@ -3,6 +3,8 @@
 A power button in the GL.iNet Comet (GL-RM1PE) web UI that presses a
 SwitchBot Bot, for powering the machine behind the KVM on and off.
 
+![The power button panel in the Comet web UI](docs/power-button.png)
+
 GL.iNet's web UI doesn't show kvmd's GPIO buttons, so the button is injected
 into the page instead, on stock firmware. The Comet has no Bluetooth radio, so
 a Linux machine with Bluetooth near the Bot drives it:
