@@ -1,7 +1,8 @@
 #!/bin/sh
-# Install or update switchbotd on the Bluetooth node container.
+# Install or update switchbotd on the Bluetooth node.
 #   sh node/install.sh root@<node>
-# The container must have the host's /run/dbus bind-mounted at
+# On a Linux host it uses the host's BlueZ, installing it if needed. In a
+# container it uses the host's BlueZ through the host's /run/dbus mounted at
 # /mnt/host-dbus (see README).
 set -eu
 [ $# -eq 1 ] || { echo "usage: $0 root@<node>" >&2; exit 1; }
@@ -9,12 +10,20 @@ target=$1
 cd "$(dirname "$0")"
 
 ssh "$target" 'set -eu
-	[ -S /mnt/host-dbus/system_bus_socket ] || { echo "no host D-Bus socket at /mnt/host-dbus" >&2; exit 1; }
-	if ! python3 -c "import aiohttp, dbus_next" 2>/dev/null; then
+	pkgs="python3-aiohttp python3-dbus-next"
+	[ -S /mnt/host-dbus/system_bus_socket ] || pkgs="$pkgs bluez"
+	missing=""
+	for p in $pkgs; do
+		dpkg -s "$p" >/dev/null 2>&1 || missing="$missing $p"
+	done
+	if [ -n "$missing" ]; then
 		apt-get update -qq
-		DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-aiohttp python3-dbus-next
+		DEBIAN_FRONTEND=noninteractive apt-get install -y -qq $missing
 	fi
+	[ -S /mnt/host-dbus/system_bus_socket ] || systemctl enable -q --now bluetooth
 	id switchbot >/dev/null 2>&1 || useradd --system --home-dir /nonexistent --shell /usr/sbin/nologin switchbot
+	# Older BlueZ only lets root and the bluetooth group talk to it.
+	if getent group bluetooth >/dev/null; then usermod -aG bluetooth switchbot; fi
 	install -d -m 0755 /opt/switchbot
 	install -d -m 0750 -o switchbot -g switchbot /etc/switchbot
 	if [ ! -s /etc/switchbot/token ]; then

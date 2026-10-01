@@ -26,6 +26,8 @@ VERSION = "1.0"
 CONFIG_PATH = os.environ.get("SWITCHBOT_CONFIG", "/etc/switchbot/config.json")
 TOKEN_PATH = os.environ.get("SWITCHBOT_TOKEN_FILE", "/etc/switchbot/token")
 LISTEN = os.environ.get("SWITCHBOT_LISTEN", "127.0.0.1:8779")
+# A container that borrows the host's BlueZ has the host's /run/dbus here.
+HOST_DBUS = "/mnt/host-dbus/system_bus_socket"
 
 ADAPTER = "org.bluez.Adapter1"
 DEVICE = "org.bluez.Device1"
@@ -167,7 +169,11 @@ class AuthFromCredentials(AuthExternal):
 
 
 async def system_bus():
-    return await MessageBus(bus_type=BusType.SYSTEM, auth=AuthFromCredentials()).connect()
+    address = os.environ.get("DBUS_SYSTEM_BUS_ADDRESS")
+    if not address and os.path.exists(HOST_DBUS):
+        address = f"unix:path={HOST_DBUS}"
+    return await MessageBus(bus_address=address, bus_type=BusType.SYSTEM,
+                            auth=AuthFromCredentials()).connect()
 
 
 class Bluez:

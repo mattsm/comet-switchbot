@@ -211,6 +211,8 @@ async def main():
         await asyncio.sleep(0.1)
     try:
         await run(address)
+        await autodetect_check(sock)
+        print("ALL OK")
     finally:
         daemon.terminate()
 
@@ -288,7 +290,20 @@ async def run(address):
     print("out-of-range ok:", missing)
 
     await http_checks()
-    print("ALL OK")
+
+
+async def autodetect_check(sock):
+    saved = os.environ.pop("DBUS_SYSTEM_BUS_ADDRESS")
+    default = sb.HOST_DBUS
+    sb.HOST_DBUS = sock
+    try:
+        bus = await sb.system_bus()
+        assert bus.connected
+        bus.disconnect()
+        print("bus ok: uses the container's host-dbus mount when it exists")
+    finally:
+        sb.HOST_DBUS = default
+        os.environ["DBUS_SYSTEM_BUS_ADDRESS"] = saved
 
 
 async def http_checks():
