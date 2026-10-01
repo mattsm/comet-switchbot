@@ -104,3 +104,7 @@ ssh root@<comet> /etc/kvmd/user/scripts/S90switchbot uninstall
   Assistant integrations for the Comet.
 - [SwitchBot's BLE API](https://github.com/OpenWonderLabs/SwitchBotAPI-BLE),
   the source of the Bot command bytes used here.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
