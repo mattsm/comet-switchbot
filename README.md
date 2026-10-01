@@ -3,8 +3,9 @@
 A power button in the GL.iNet Comet (GL-RM1PE) web UI that presses a
 SwitchBot Bot, for powering the machine behind the KVM on and off.
 
-The Comet has no Bluetooth radio, so a small container on a Proxmox host with
-Bluetooth drives the Bot:
+GL.iNet's web UI doesn't show kvmd's GPIO buttons, so the button is injected
+into the page instead, on stock firmware. The Comet has no Bluetooth radio, so
+a small container on a Proxmox host with Bluetooth drives the Bot:
 
 ```
 browser ──https──> Comet nginx ──(KVM login check)──> http://<node>:8779 ──D-Bus──> host BlueZ ──BLE──> Bot
@@ -19,6 +20,9 @@ browser ──https──> Comet nginx ──(KVM login check)──> http://<no
   forwards `/switchbot/api/` to the node behind the Comet's login, and a boot
   hook (`S90switchbot`) that re-applies both at every boot. GL's own files
   are never modified.
+
+Tested with a Comet PoE on firmware 1.10.1, a SwitchBot Bot on firmware 6.6,
+and an Intel AX200 in a Proxmox VE 9.1 host.
 
 ## Setup
 
@@ -87,3 +91,16 @@ sh tests/test_nginx.sh                       # drop-in in a stock nginx containe
 ```sh
 ssh root@<comet> /etc/kvmd/user/scripts/S90switchbot uninstall
 ```
+
+## Related
+
+- [GL.iNet Fingerbot](https://docs.gl-inet.com/kvm/en/user_guide/gl-fgb-01/),
+  the official button pusher, with its own paired USB receiver.
+- [heidrickla/glkvm-firmware](https://github.com/heidrickla/glkvm-firmware),
+  which enables the classic PiKVM UI on port 8888, where kvmd GPIO buttons
+  do show.
+- [heidrickla/ha-glkvm](https://github.com/heidrickla/ha-glkvm) and
+  [metril/ha-glinet-comet](https://github.com/metril/ha-glinet-comet), Home
+  Assistant integrations for the Comet.
+- [SwitchBot's BLE API](https://github.com/OpenWonderLabs/SwitchBotAPI-BLE),
+  the source of the Bot command bytes used here.
